@@ -1,0 +1,14 @@
+{
+  "name": "password-hash-audit-lab",
+  "version": "1.0.0",
+  "description": "Lab: shows why weak and unsalted password hashes are easy to guess. Uses fictional data only.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "audit": "node cli.js"
+  }
+}

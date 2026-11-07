@@ -1,0 +1,31 @@
+{
+  "note": "FICTIONAL lab data. These users and passwords are made up for practice.",
+  "algorithm": "sha256(salt + password), hex",
+  "records": [
+    {
+      "user": "alice",
+      "salt": "",
+      "hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f"
+    },
+    {
+      "user": "bob",
+      "salt": "",
+      "hash": "323725e8eff4df0a4974d6ea8c73017aa6467d94e09382745b7a988cec0fba0a"
+    },
+    {
+      "user": "carol",
+      "salt": "",
+      "hash": "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
+    },
+    {
+      "user": "dave",
+      "salt": "d4v3s4lt",
+      "hash": "37eb72f1621a6723d0b75fad395d788672366ae9a29aabc71164c040c1e87476"
+    },
+    {
+      "user": "erin",
+      "salt": "e9r1n5alt",
+      "hash": "8936f3a01017a0528811a056c3c46d40d623ccb08797bcbdc96d5a4beec0a833"
+    }
+  ]
+}
