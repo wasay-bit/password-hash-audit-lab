@@ -2,12 +2,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { audit, hashPassword, crackRecord } from "../lib/audit.js";
+import {
+  audit,
+  crackRecord,
+  duplicateHashes,
+  hashPassword,
+  isUnsalted,
+  summarize,
+} from "../lib/audit.js";
 
 const samplePath = fileURLToPath(new URL("../data/sample-hashes.json", import.meta.url));
 const wordsPath = fileURLToPath(new URL("../data/common-passwords.txt", import.meta.url));
 const sample = JSON.parse(await readFile(samplePath, "utf8"));
 const words = (await readFile(wordsPath, "utf8")).split("\n").filter(Boolean);
+const results = audit(sample.records, words);
+const byUser = Object.fromEntries(results.map((r) => [r.user, r.password]));
 
 test("hashPassword matches a known SHA-256 value", () => {
   assert.equal(
@@ -39,19 +48,69 @@ test("a long passphrase outside the word list is not guessed", () => {
 });
 
 test("the sample file gives the expected results", () => {
-  const results = Object.fromEntries(audit(sample.records, words).map((r) => [r.user, r.password]));
-  assert.deepEqual(results, {
-    alice: "password123",
-    bob: "Summer2024!",
-    carol: null,
-    dave: "letmein",
-    erin: null,
-  });
+  const cracked = Object.entries(byUser).filter(([, p]) => p !== null).sort();
+  assert.deepEqual(cracked, [
+    ["alice.reyes", "password123"],
+    ["bob.nakamura", "Summer2024!"],
+    ["dave.osei", "letmein"],
+    ["frank.moreau", "qwerty"],
+    ["grace.lin", "qwerty"],
+    ["jamal.wright", "monkey"],
+    ["keiko.tanaka", "shadow"],
+    ["luis.ortega", "abc123"],
+    ["noah.patel", "ninja"],
+    ["olga.petrova", "shadow"],
+    ["priya.raman", "welcome"],
+    ["quinn.baker", "welcome"],
+  ]);
+});
+
+test("the sample file leaves the strong passwords alone", () => {
+  for (const user of ["carol.diaz", "erin.fischer", "hector.silva", "irene.kowalski", "maria.rossi"]) {
+    assert.equal(byUser[user], null, `${user} should not be guessed`);
+  }
+});
+
+test("summary counts the cracked and uncracked users", () => {
+  const stats = summarize(results);
+  assert.equal(stats.total, sample.records.length);
+  assert.equal(stats.cracked, 12);
+  assert.equal(stats.notCracked, 5);
+  assert.equal(stats.cracked + stats.notCracked, stats.total);
+});
+
+test("summary reports shared passwords, including a salted one", () => {
+  const stats = summarize(results);
+  const shared = stats.reused.map((g) => `${g.password}:${g.users.join(",")}`).sort();
+  assert.deepEqual(shared, [
+    "qwerty:frank.moreau,grace.lin",
+    "shadow:keiko.tanaka,olga.petrova",
+    "welcome:priya.raman,quinn.baker",
+  ]);
+});
+
+test("identical hashes reveal a shared password without guessing", () => {
+  const duplicates = duplicateHashes(sample.records);
+  assert.equal(duplicates.length, 1);
+  assert.deepEqual(duplicates[0].users, ["priya.raman", "quinn.baker"]);
+});
+
+test("salted records never produce identical hashes", () => {
+  const salted = sample.records.filter((r) => !isUnsalted(r));
+  assert.ok(salted.length > 0);
+  assert.equal(duplicateHashes(salted).length, 0);
 });
 
 test("every sample record is fictional and has a 64-character hex hash", () => {
   assert.match(sample.note, /FICTIONAL/);
+  assert.match(sample.company, /fictional/i);
   for (const r of sample.records) {
     assert.match(r.hash, /^[0-9a-f]{64}$/, `${r.user} hash is not SHA-256 hex`);
+    assert.ok(r.user && r.role, `${r.user} is missing a user name or role`);
   }
+});
+
+test("the sample has a mix of salted and unsalted records", () => {
+  const unsalted = sample.records.filter(isUnsalted).length;
+  assert.ok(unsalted > 0 && unsalted < sample.records.length, "the sample should show both cases");
 });
