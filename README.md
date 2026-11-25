@@ -34,7 +34,7 @@ Requires Node.js 18 or newer. There are no packages to install.
 - `data/sample-hashes.json`: fictional users and hashes.
 - `data/common-passwords.txt`: a short list of common passwords.
 - `test/audit.test.js`: tests for the check and the sample results.
-- `.github/workflows/tests.yml`: planned GitHub Actions check (not yet active; see below).
+- `.github/workflows/tests.yml`: runs `npm test` on every push and pull request through GitHub Actions.
 
 ## Limitations
 
